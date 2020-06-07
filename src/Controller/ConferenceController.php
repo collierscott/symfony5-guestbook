@@ -13,8 +13,14 @@ use Twig\Environment;
 
 class ConferenceController extends AbstractController
 {
+    /**
+     * @var Environment $twig
+     */
     private $twig;
 
+    /**
+     * @param Environment $twig
+     */
     public function __construct(Environment $twig)
     {
         $this->twig = $twig;
@@ -22,6 +28,12 @@ class ConferenceController extends AbstractController
 
     /**
      * @Route("/", name="homepage")
+     *
+     * @param ConferenceRepository $conferenceRepository
+     * @return Response
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
     public function index(ConferenceRepository $conferenceRepository)
     {
@@ -33,10 +45,9 @@ class ConferenceController extends AbstractController
     }
 
     /**
-     * @Route("/conference/{id}", name="conference")
+     * @Route("/conference/{slug}", name="conference")
      *
      * @param Request $request
-     * @param Environment $twig
      * @param Conference $conference
      * @param CommentRepository $commentRepository
      * @return Response
