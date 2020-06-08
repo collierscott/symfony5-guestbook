@@ -8,6 +8,10 @@ use phpDocumentor\Reflection\Types\Iterable_;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\iterator;
 
@@ -47,9 +51,15 @@ class SpamCheckerTest extends TestCase
     public function testSpamScore(int $expectedScore, ResponseInterface $response, Comment $comment, array $context)
     {
         $client = new MockHttpClient([$response]);
-        $checker = new SpamChecker($client, 'abcde');
+        $checker = new SpamChecker($client, 'c84d432d850d');
 
-        $score = $checker->getSpamScore($comment, $context);
+        try {
+            $score = $checker->getSpamScore($comment, $context);
+        } catch (ClientExceptionInterface $e) {
+        } catch (RedirectionExceptionInterface $e) {
+        } catch (ServerExceptionInterface $e) {
+        } catch (TransportExceptionInterface $e) {
+        }
         $this->assertSame($expectedScore, $score);
     }
 
