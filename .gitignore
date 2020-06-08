@@ -10,3 +10,4 @@
 ###< symfony/framework-bundle ###
 /public/uploads
 .idea
+config/secrets/**/*.decrypt.private.php
