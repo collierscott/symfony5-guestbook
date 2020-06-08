@@ -11,3 +11,8 @@
 /public/uploads
 .idea
 config/secrets/**/*.decrypt.private.php
+###> symfony/phpunit-bridge ###
+.phpunit
+.phpunit.result.cache
+/phpunit.xml
+###< symfony/phpunit-bridge ###
