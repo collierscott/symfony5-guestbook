@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Comment;
 use App\Entity\Conference;
 use App\Form\CommentFormType;
+use App\Message\CommentMessage;
 use App\Repository\CommentRepository;
 use App\Repository\ConferenceRepository;
 use App\SpamChecker;
@@ -14,6 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Twig\Environment;
 
@@ -29,13 +31,17 @@ class ConferenceController extends AbstractController
      */
     private $entityManager;
 
+    /** @var MessageBusInterface $bus */
+    private $bus;
+
     /**
      * @param Environment $twig
      */
-    public function __construct(Environment $twig, EntityManagerInterface $entityManager)
+    public function __construct(Environment $twig, EntityManagerInterface $entityManager, MessageBusInterface $bus)
     {
         $this->twig = $twig;
         $this->entityManager = $entityManager;
+        $this->bus = $bus;
     }
 
     /**
@@ -66,6 +72,7 @@ class ConferenceController extends AbstractController
      * @param LoggerInterface $logger
      * @param string $photoDir
      * @return Response
+     *
      * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
@@ -75,7 +82,7 @@ class ConferenceController extends AbstractController
      * @throws \Twig\Error\SyntaxError
      */
     public function show(Request $request, Conference $conference, CommentRepository $commentRepository,
-                         SpamChecker $spamChecker, LoggerInterface $logger, string $photoDir) {
+                         LoggerInterface $logger, string $photoDir) {
         $comment = new Comment();
         $form = $this->createForm(CommentFormType::class, $comment);
 
@@ -98,6 +105,7 @@ class ConferenceController extends AbstractController
             }
 
             $this->entityManager->persist($comment);
+            $this->entityManager->flush();
 
             $context = [
                 'user_ip' => $request->getClientIp(),
@@ -106,12 +114,7 @@ class ConferenceController extends AbstractController
                 'permalink' => $request->getUri(),
             ];
 
-            if (2 === $spamChecker->getSpamScore($comment, $context)) {
-                $logger->critical(sprintf('Spam', $context));
-                throw new \RuntimeException('SPAM!!!');
-            }
-
-            $this->entityManager->flush();
+            $this->bus->dispatch(new CommentMessage($comment->getId(), $context));
 
             return $this->redirectToRoute('conference', ['slug' => $conference->getSlug()]);
         }

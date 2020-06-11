@@ -43,11 +43,21 @@ class AppFixtures extends Fixture
 
         $com = new Comment();
         $com->setConference($one)
+            ->setState('published')
             ->setEmail('scott@onlinespaces.com')
+            ->setPhotoFilename('22360694e5a8.jpeg')
             ->setAuthor('Scott')
             ->setText('This is great!');
 
         $manager->persist($com);
+
+        $com2 = new Comment();
+        $com2->setConference($one)
+            ->setEmail('scott@onlinespaces.com')
+            ->setAuthor('Scott')
+            ->setText('This is great!');
+
+        $manager->persist($com2);
 
         $admin = new Admin();
         $admin->setRoles(['ROLE_ADMIN'])
