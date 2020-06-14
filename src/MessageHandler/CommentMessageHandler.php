@@ -2,6 +2,7 @@
 
 namespace App\MessageHandler;
 
+use App\ImageOptimizer;
 use App\Message\CommentMessage;
 use App\Repository\CommentRepository;
 use App\SpamChecker;
@@ -45,9 +46,19 @@ class CommentMessageHandler implements MessageHandlerInterface
     private $mailer;
 
     /**
+     * @var ImageOptimizer $imageOptimizer
+     */
+    private $imageOptimizer;
+
+    /**
      * @var string $adminEmail
      */
     private $adminEmail;
+
+    /**
+     * @var string $photoDir
+     */
+    private $photoDir;
 
     /**
      * @param EntityManagerInterface $entityManager
@@ -55,6 +66,10 @@ class CommentMessageHandler implements MessageHandlerInterface
      * @param CommentRepository $commentRepository
      * @param MessageBusInterface $bus
      * @param WorkflowInterface $commentStateMachine
+     * @param MailerInterface $mailer
+     * @param ImageOptimizer $imageOptimizer
+     * @param string $adminEmail
+     * @param string $photoDir
      * @param LoggerInterface|null $logger
      */
     public function __construct(
@@ -64,7 +79,9 @@ class CommentMessageHandler implements MessageHandlerInterface
         MessageBusInterface $bus,
         WorkflowInterface $commentStateMachine,
         MailerInterface $mailer,
+        ImageOptimizer $imageOptimizer,
         string $adminEmail,
+        string $photoDir,
         LoggerInterface $logger = null
     )
     {
@@ -74,7 +91,9 @@ class CommentMessageHandler implements MessageHandlerInterface
         $this->bus = $bus;
         $this->workflow = $commentStateMachine;
         $this->mailer = $mailer;
+        $this->imageOptimizer = $imageOptimizer;
         $this->adminEmail = $adminEmail;
+        $this->photoDir = $photoDir;
         $this->logger = $logger;
     }
 
@@ -85,52 +104,44 @@ class CommentMessageHandler implements MessageHandlerInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
      */
     public function __invoke(CommentMessage $message)
     {
         $comment = $this->commentRepository->find($message->getId());
-
-        if(!$comment) {
+        if (!$comment) {
             return;
         }
-
-//        if (2 === $this->spamChecker->getSpamScore($comment, $message->getContext())) {
-//            $comment->setState('spam');
-//        } else {
-//            $comment->setState('published');
-//        }
 
         if ($this->workflow->can($comment, 'accept')) {
             $score = $this->spamChecker->getSpamScore($comment, $message->getContext());
             $transition = 'accept';
-
-            if ($score === 2) {
+            if (2 === $score) {
                 $transition = 'reject_spam';
-            } elseif ($score === 1) {
+            } elseif (1 === $score) {
                 $transition = 'might_be_spam';
-
-                $this->workflow->apply($comment, $transition);
-                $this->entityManager->flush();
-
-                $this->bus->dispatch($message);
-            } elseif ($this->workflow->can($comment, 'publish') || $this->workflow->can($comment, 'publish_ham')) {
-//                $this->workflow->apply($comment, $this->workflow->can($comment, 'publish') ? 'publish' : 'publish_ham');
-//                $this->entityManager->flush();
-                $this->mailer->send((new NotificationEmail())
-                    ->subject('New comment posted')
-                    ->htmlTemplate('emails/comment_notification.html.twig')
-                    ->from($this->adminEmail)
-                    ->to($this->adminEmail)
-                    ->context(['comment' => $comment])
-                );
-            } elseif ($this->logger) {
-                $this->logger->debug('Dropping the comment message', [
-                    'comment' => $comment->getId(),
-                    'state' => $comment->getState(),
-                ]);
             }
-        }
+            $this->workflow->apply($comment, $transition);
+            $this->entityManager->flush();
 
+            $this->bus->dispatch($message);
+        } elseif ($this->workflow->can($comment, 'publish') || $this->workflow->can($comment, 'publish_ham')) {
+            $this->mailer->send((new NotificationEmail())
+                ->subject('New comment posted')
+                ->htmlTemplate('emails/comment_notification.html.twig')
+                ->from($this->adminEmail)
+                ->to($this->adminEmail)
+                ->context(['comment' => $comment])
+            );
+        } elseif ($this->workflow->can($comment, 'optimize')) {
+            if ($comment->getPhotoFilename()) {
+                $this->imageOptimizer->resize($this->photoDir.'/'.$comment->getPhotoFilename());
+            }
+            $this->workflow->apply($comment, 'optimize');
+            $this->entityManager->flush();
+        } elseif ($this->logger) {
+            $this->logger->debug('Dropping comment message', ['comment' => $comment->getId(), 'state' => $comment->getState()]);
+        }
     }
 
 }
