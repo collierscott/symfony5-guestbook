@@ -24,6 +24,7 @@
         "symfony/string": "5.1.*",
         "symfony/test-pack": "^1.0",
         "symfony/twig-pack": "^1.0",
+        "symfony/webpack-encore-bundle": "^1.7",
         "symfony/workflow": "5.1.*",
         "symfony/yaml": "5.1.*",
         "twig/cssinliner-extra": "^3.0",
