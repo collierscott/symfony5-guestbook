@@ -109,6 +109,7 @@ class CommentMessageHandler implements MessageHandlerInterface
     public function __invoke(CommentMessage $message)
     {
         $comment = $this->commentRepository->find($message->getId());
+
         if (!$comment) {
             return;
         }
