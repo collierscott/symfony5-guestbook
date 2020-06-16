@@ -9,15 +9,18 @@ class CommentMessage
      */
     private $id;
 
+    private $reviewUrl;
+
     /**
      * @var array $context
      */
     private $context;
 
-    public function __construct(int $id, array $context = [])
+    public function __construct(int $id, string $reviewUrl, array $context = [])
     {
         $this->id = $id;
         $this->context = $context;
+        $this->reviewUrl = $reviewUrl;
     }
 
     /**
@@ -34,6 +37,14 @@ class CommentMessage
     public function getContext(): array
     {
         return $this->context;
+    }
+
+    /**
+     * @return string
+     */
+    public function getReviewUrl(): string
+    {
+        return $this->reviewUrl;
     }
 
 }
