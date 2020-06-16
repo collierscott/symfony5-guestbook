@@ -18,6 +18,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Twig\Environment;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 
 class ConferenceController extends AbstractController
 {
@@ -36,6 +39,8 @@ class ConferenceController extends AbstractController
 
     /**
      * @param Environment $twig
+     * @param EntityManagerInterface $entityManager
+     * @param MessageBusInterface $bus
      */
     public function __construct(Environment $twig, EntityManagerInterface $entityManager, MessageBusInterface $bus)
     {
@@ -49,9 +54,9 @@ class ConferenceController extends AbstractController
      *
      * @param ConferenceRepository $conferenceRepository
      * @return Response
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function index(ConferenceRepository $conferenceRepository)
     {
@@ -70,9 +75,9 @@ class ConferenceController extends AbstractController
      *
      * @param ConferenceRepository $conferenceRepository
      * @return Response
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function conferenceHeader(ConferenceRepository $conferenceRepository)
     {
@@ -90,18 +95,13 @@ class ConferenceController extends AbstractController
      * @param Request $request
      * @param Conference $conference
      * @param CommentRepository $commentRepository
-     * @param SpamChecker $spamChecker
      * @param LoggerInterface $logger
      * @param string $photoDir
      * @return Response
      *
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function show(Request $request, Conference $conference, CommentRepository $commentRepository,
                          LoggerInterface $logger, string $photoDir) {
