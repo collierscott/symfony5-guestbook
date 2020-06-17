@@ -9,7 +9,6 @@ use App\Repository\CommentRepository;
 use App\SpamChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Notifier\NotifierInterface;
@@ -17,72 +16,20 @@ use Symfony\Component\Workflow\WorkflowInterface;
 
 class CommentMessageHandler implements MessageHandlerInterface
 {
-    /** @var SpamChecker $spamChecker */
     private $spamChecker;
-
-    /** @var EntityManagerInterface $entityManager */
     private $entityManager;
-
-    /** @var CommentRepository $commentRepository */
     private $commentRepository;
-
-    /**
-     * @var MessageBusInterface $bus
-     */
     private $bus;
-
-    /**
-     * @var WorkflowInterface $workflow
-     */
     private $workflow;
-
-    /**
-     * @var LoggerInterface|null $logger
-     */
+    private $notifier;
+    private $imageOptimizer;
+    private $photoDir;
     private $logger;
 
-    /**
-     * @var MailerInterface $mailer
-     */
-    private $mailer;
-
-    /**
-     * @var NotifierInterface $notifier
-     */
-    private $notifier;
-
-    /**
-     * @var ImageOptimizer $imageOptimizer
-     */
-    private $imageOptimizer;
-
-    /**
-     * @var string $photoDir
-     */
-    private $photoDir;
-
-    /**
-     * @param EntityManagerInterface $entityManager
-     * @param SpamChecker $spamChecker
-     * @param CommentRepository $commentRepository
-     * @param MessageBusInterface $bus
-     * @param WorkflowInterface $commentStateMachine
-     * @param NotifierInterface $notifier
-     * @param ImageOptimizer $imageOptimizer
-     * @param string $photoDir
-     * @param LoggerInterface|null $logger
-     */
     public function __construct(
-        EntityManagerInterface $entityManager,
-        SpamChecker $spamChecker,
-        CommentRepository $commentRepository,
-        MessageBusInterface $bus,
-        WorkflowInterface $commentStateMachine,
-        NotifierInterface $notifier,
-        ImageOptimizer $imageOptimizer,
-        string $photoDir,
-        LoggerInterface $logger = null
-    )
+        EntityManagerInterface $entityManager, SpamChecker $spamChecker,
+        CommentRepository $commentRepository, MessageBusInterface $bus, WorkflowInterface $commentStateMachine,
+        NotifierInterface $notifier, ImageOptimizer $imageOptimizer, string $photoDir, LoggerInterface $logger = null)
     {
         $this->entityManager = $entityManager;
         $this->spamChecker = $spamChecker;
@@ -95,19 +42,9 @@ class CommentMessageHandler implements MessageHandlerInterface
         $this->logger = $logger;
     }
 
-    /**
-     * @param CommentMessage $message
-     *
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
-     */
     public function __invoke(CommentMessage $message)
     {
         $comment = $this->commentRepository->find($message->getId());
-
         if (!$comment) {
             return;
         }
@@ -125,7 +62,6 @@ class CommentMessageHandler implements MessageHandlerInterface
 
             $this->bus->dispatch($message);
         } elseif ($this->workflow->can($comment, 'publish') || $this->workflow->can($comment, 'publish_ham')) {
-            // $this->notifier->send(new CommentReviewNotification($comment), ...$this->notifier->getAdminRecipients());
             $notification = new CommentReviewNotification($comment, $message->getReviewUrl());
             $this->notifier->send($notification, ...$this->notifier->getAdminRecipients());
         } elseif ($this->workflow->can($comment, 'optimize')) {
@@ -138,5 +74,4 @@ class CommentMessageHandler implements MessageHandlerInterface
             $this->logger->debug('Dropping comment message', ['comment' => $comment->getId(), 'state' => $comment->getState()]);
         }
     }
-
 }

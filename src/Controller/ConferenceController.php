@@ -107,10 +107,12 @@ class ConferenceController extends AbstractController
      * @throws SyntaxError
      */
     public function show(
-        Request $request, Conference $conference,
+        Request $request,
+        Conference $conference,
         CommentRepository $commentRepository,
         NotifierInterface $notifier,
-        LoggerInterface $logger, string $photoDir
+        LoggerInterface $logger,
+        string $photoDir
     ) {
         $comment = new Comment();
         $form = $this->createForm(CommentFormType::class, $comment);
@@ -144,7 +146,9 @@ class ConferenceController extends AbstractController
             ];
 
             $reviewUrl = $this->generateUrl('review_comment', ['id' => $comment->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
-            $this->bus->dispatch(new CommentMessage($comment->getId(), $reviewUrl, $context));
+
+            $this->dispatchMessage(new CommentMessage($comment->getId(), $reviewUrl, $context));
+            // $this->bus->dispatch(new CommentMessage($comment->getId(), $reviewUrl, $context));
 
             $notifier->send(new Notification('Thank you for the feedback; your comment will be posted after moderation.', ['browser']));
 
