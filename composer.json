@@ -27,13 +27,15 @@
         "symfony/slack-notifier": "5.1.*",
         "symfony/string": "5.1.*",
         "symfony/test-pack": "^1.0",
+        "symfony/translation": "5.1.*",
         "symfony/twig-pack": "^1.0",
         "symfony/webpack-encore-bundle": "^1.7",
         "symfony/workflow": "5.1.*",
         "symfony/yaml": "5.1.*",
         "twig/cssinliner-extra": "^3.0",
         "twig/inky-extra": "^3.0",
-        "twig/intl-extra": "^3.0"
+        "twig/intl-extra": "^3.0",
+        "twig/string-extra": "^3.0"
     },
     "require-dev": {
         "dama/doctrine-test-bundle": "^6.3",

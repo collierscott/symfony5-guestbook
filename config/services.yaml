@@ -7,6 +7,8 @@ parameters:
     default_admin_email: 834ba89362-ed7c19@inbox.mailtrap.io
     default_domain: 's5-guestbook.localhost'
     default_scheme: 'http'
+    app.supported_locales: 'en|fr'
+
     router.request_context.host: '%env(default:default_domain:SYMFONY_DEFAULT_ROUTE_HOST)%'
     router.request_context.scheme: '%env(default:default_domain:SYMFONY_DEFAULT_ROUTE_SCHEME)%'
 
